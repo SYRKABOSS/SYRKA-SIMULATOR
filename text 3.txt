@@ -1,0 +1,842 @@
+Claude gave me this to copy and paste:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYRKA — Circle Simulator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --navy: #0a1628;
+    --navy2: #0f2040;
+    --blue: #1a6bff;
+    --blue-dim: #1a6bff22;
+    --gold: #f5a623;
+    --gold-dim: #f5a62322;
+    --green: #00d4a0;
+    --green-dim: #00d4a018;
+    --red: #ff4757;
+    --red-dim: #ff475722;
+    --amber: #ffab00;
+    --text: #e8edf5;
+    --text-dim: #7a8ba8;
+    --card: #111e33;
+    --card2: #162238;
+    --border: #1e3050;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  /* ── HEADER ── */
+  .header { text-align: center; margin-bottom: 12px; padding-top: 8px; }
+  .logo { font-family: 'DM Serif Display', serif; font-size: 48px; letter-spacing: 6px; color: var(--text); line-height: 1; }
+  .logo span { color: var(--blue); }
+  .tagline { font-size: 12px; color: var(--text-dim); letter-spacing: 2.5px; text-transform: uppercase; margin-top: 6px; }
+
+  /* GitHub badge strip */
+  .github-strip {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin: 14px 0 28px;
+    padding: 10px 20px;
+    background: var(--card2); border: 1px solid var(--border); border-radius: 30px;
+    font-size: 12px; color: var(--text-dim); width: fit-content; margin-inline: auto;
+  }
+  .github-strip a { color: var(--blue); text-decoration: none; font-weight: 600; }
+  .github-strip a:hover { text-decoration: underline; }
+  .github-strip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+
+  /* ── INTRO CARD ── */
+  .intro-card {
+    background: var(--card2); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+  }
+  .intro-stat { display: flex; flex-direction: column; gap: 3px; }
+  .intro-stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  .intro-stat-val { font-size: 15px; font-weight: 600; }
+  .intro-stat-val.blue { color: var(--blue); }
+  .intro-stat-val.gold { color: var(--gold); }
+  .intro-stat-val.green { color: var(--green); }
+
+  /* ── SCENARIO SELECTOR ── */
+  .scenario-bar {
+    display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .scenario-btn {
+    flex: 1; min-width: 130px;
+    padding: 11px 14px; border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--card); color: var(--text-dim);
+    font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all .2s; text-align: center; letter-spacing: .3px;
+  }
+  .scenario-btn:hover { border-color: var(--blue); color: var(--text); }
+  .scenario-btn.active { border-color: var(--blue); background: var(--blue-dim); color: var(--blue); }
+  .scenario-btn .icon { display: block; font-size: 20px; margin-bottom: 4px; }
+
+  /* ── SCENARIO DESC ── */
+  .scenario-desc {
+    background: var(--card2); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 16px 20px; margin-bottom: 18px;
+  }
+  .scenario-desc h3 { font-size: 14px; font-weight: 700; margin-bottom: 5px; color: var(--text); }
+  .scenario-desc p { font-size: 12px; color: var(--text-dim); line-height: 1.65; }
+  .scenario-desc .highlight { color: var(--gold); font-weight: 600; }
+
+  /* ── CIRCLE META ── */
+  .circle-meta {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 18px 22px; margin-bottom: 18px;
+    display: flex; gap: 28px; flex-wrap: wrap; align-items: center;
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  .meta-value { font-size: 17px; font-weight: 600; }
+  .meta-value.gold { color: var(--gold); }
+  .meta-value.green { color: var(--green); }
+  .meta-value.blue { color: var(--blue); }
+
+  /* ── MEMBERS GRID ── */
+  .members-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 12px; margin-bottom: 18px;
+  }
+  .member-card {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+    transition: all .3s; position: relative; overflow: hidden;
+  }
+  .member-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--border); transition: background .3s;
+  }
+  .member-card.recipient::before { background: var(--gold); }
+  .member-card.good::before { background: var(--green); }
+  .member-card.warning::before { background: var(--amber); }
+  .member-card.danger::before { background: var(--red); }
+  .member-card.muted::before { background: #333; }
+
+  .member-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-bottom: 10px;
+    background: var(--navy2); border: 2px solid var(--border);
+  }
+  .member-name { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+  .member-slot { font-size: 11px; color: var(--text-dim); margin-bottom: 10px; }
+
+  .trust-bar-wrap { margin-bottom: 8px; }
+  .trust-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); margin-bottom: 3px; }
+  .trust-bar { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
+  .trust-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
+
+  .member-amounts { display: flex; gap: 6px; margin-top: 8px; }
+  .amt { flex: 1; background: var(--navy2); border-radius: 7px; padding: 6px 7px; }
+  .amt-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .4px; }
+  .amt-value { font-size: 12px; font-weight: 600; margin-top: 2px; }
+
+  .member-badge {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px; letter-spacing: .5px;
+    text-transform: uppercase; margin-top: 7px;
+  }
+  .badge-good    { background: var(--green-dim); color: var(--green); }
+  .badge-warn    { background: var(--gold-dim);  color: var(--gold);  }
+  .badge-danger  { background: var(--red-dim);   color: var(--red);   }
+  .badge-blue    { background: var(--blue-dim);  color: var(--blue);  }
+  .badge-muted   { background: #ffffff10;        color: #555;         }
+
+  /* ── PAYOUT CARD ── */
+  .payout-card {
+    border-radius: var(--radius); padding: 20px 22px; margin-bottom: 18px;
+    border: 1.5px solid;
+  }
+  .payout-card.full    { background: var(--green-dim); border-color: var(--green); }
+  .payout-card.partial { background: var(--gold-dim);  border-color: var(--gold);  }
+  .payout-card.blocked { background: var(--red-dim);   border-color: var(--red);   }
+
+  .payout-title { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .payout-sub   { font-size: 11px; color: var(--text-dim); margin-bottom: 14px; }
+  .payout-row   { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #ffffff08; }
+  .payout-row:last-child { border: none; }
+  .payout-key   { font-size: 12px; color: var(--text-dim); }
+  .payout-val   { font-size: 14px; font-weight: 600; }
+
+  /* ── TIMELINE ── */
+  .timeline { margin-bottom: 18px; }
+  .timeline-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 10px; }
+  .timeline-weeks { display: flex; gap: 6px; }
+  .week-col {
+    flex: 1; background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 10px 8px; min-width: 0;
+  }
+  .week-col.active-week { border-color: var(--blue); background: var(--blue-dim); }
+  .week-col.done-week   { border-color: var(--border); opacity: .7; }
+  .week-label     { font-size: 10px; color: var(--text-dim); text-align: center; margin-bottom: 6px; font-weight: 600; letter-spacing: .5px; }
+  .week-emoji     { font-size: 18px; text-align: center; margin-bottom: 4px; }
+  .week-pip       { width: 8px; height: 8px; border-radius: 50%; margin: 4px auto 3px; transition: background .4s; }
+  .week-name      { font-size: 9px; text-align: center; color: var(--text-dim); }
+
+  /* ── CONTROLS ── */
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .btn {
+    padding: 10px 24px; border-radius: 9px;
+    font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: all .2s; letter-spacing: .2px;
+  }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: #3378ff; transform: translateY(-1px); box-shadow: 0 4px 16px #1a6bff44; }
+  .btn-danger  { background: var(--red);  color: #fff; }
+  .btn-danger:hover  { background: #ff616e; transform: translateY(-1px); }
+  .btn-ghost   { background: transparent; color: var(--text-dim); border: 1.5px solid var(--border); }
+  .btn-ghost:hover   { border-color: var(--text-dim); color: var(--text); }
+  .btn:disabled { opacity: .35; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+  /* ── LOG ── */
+  .log-box { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .log-header {
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .log-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .log-entries { max-height: 280px; overflow-y: auto; padding: 6px 0; }
+  .log-entry {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 7px 18px; font-size: 12px; border-bottom: 1px solid #ffffff05;
+    animation: slideIn .25s ease;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:none} }
+  .log-time { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-dim); white-space: nowrap; padding-top: 1px; min-width: 56px; }
+  .log-icon { font-size: 13px; line-height: 1.4; }
+  .log-text { color: var(--text); line-height: 1.5; }
+  .log-text .hi     { color: var(--blue);  font-weight: 600; }
+  .log-text .warn   { color: var(--amber); font-weight: 600; }
+  .log-text .danger { color: var(--red);   font-weight: 600; }
+  .log-text .good   { color: var(--green); font-weight: 600; }
+  .log-text .gold   { color: var(--gold);  font-weight: 600; }
+
+  .log-entries::-webkit-scrollbar { width: 4px; }
+  .log-entries::-webkit-scrollbar-track { background: transparent; }
+  .log-entries::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── HOW TO USE ── */
+  .how-to {
+    margin-top: 28px;
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 22px;
+  }
+  .how-to h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 12px; }
+  .how-to-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+  .how-to-item { display: flex; gap: 10px; align-items: flex-start; }
+  .how-to-icon { font-size: 16px; line-height: 1; margin-top: 1px; }
+  .how-to-text { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+  .how-to-text strong { color: var(--text); display: block; margin-bottom: 1px; font-size: 12px; }
+
+  @media (max-width: 600px) {
+    .intro-card { grid-template-columns: 1fr 1fr; }
+    .scenario-btn { min-width: 100px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">SYR<span>K</span>A</div>
+    <div class="tagline">Circle Simulator · Developer Preview</div>
+  </div>
+
+  <div class="github-strip">
+    <div class="dot"></div>
+    Interactive simulation of the SYRKA savings circle payment engine &nbsp;·&nbsp;
+    Built for internal dev review
+  </div>
+
+  <!-- Quick stats -->
+  <div class="intro-card">
+    <div class="intro-stat">
+      <div class="intro-stat-label">Payment Layer</div>
+      <div class="intro-stat-val blue">Stripe Connect</div>
+    </div>
+    <div class="intro-stat">
+      <div class="intro-stat-label">Transfer Model</div>
+      <div class="intro-stat-val gold">Sep. Charges & Transfers</div>
+    </div>
+    <div class="intro-stat">
+      <div class="intro-stat-label">Fund Custody</div>
+      <div class="intro-stat-val green">Never. Peer-to-peer.</div>
+    </div>
+  </div>
+
+  <!-- Scenario selector -->
+  <div class="scenario-bar">
+    <button class="scenario-btn active" onclick="loadScenario('normal')"   id="btn-normal">
+      <span class="icon">✅</span>Perfect Circle
+    </button>
+    <button class="scenario-btn" onclick="loadScenario('runner')"   id="btn-runner">
+      <span class="icon">🏃</span>The Runner
+    </button>
+    <button class="scenario-btn" onclick="loadScenario('partial')"  id="btn-partial">
+      <span class="icon">⚠️</span>Partial Failure
+    </button>
+    <button class="scenario-btn" onclick="loadScenario('trust')"    id="btn-trust">
+      <span class="icon">⭐</span>Trust Mode
+    </button>
+    <button class="scenario-btn" onclick="loadScenario('cascade')"  id="btn-cascade">
+      <span class="icon">💥</span>Cascade Failure
+    </button>
+  </div>
+
+  <!-- Scenario description -->
+  <div class="scenario-desc" id="scenario-desc"></div>
+
+  <!-- Circle meta -->
+  <div class="circle-meta" id="circle-meta"></div>
+
+  <!-- Members -->
+  <div class="members-grid" id="members-grid"></div>
+
+  <!-- Payout card -->
+  <div id="payout-card-wrap"></div>
+
+  <!-- Timeline -->
+  <div class="timeline">
+    <div class="timeline-title">📅 Cycle Timeline</div>
+    <div class="timeline-weeks" id="timeline"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls" id="controls"></div>
+
+  <!-- Log -->
+  <div class="log-box">
+    <div class="log-header"><div class="log-dot"></div>Live System Event Log</div>
+    <div class="log-entries" id="log-entries"></div>
+  </div>
+
+  <!-- How to use -->
+  <div class="how-to">
+    <h4>How to use this simulator</h4>
+    <div class="how-to-grid">
+      <div class="how-to-item">
+        <div class="how-to-icon">✅</div>
+        <div class="how-to-text"><strong>Perfect Circle</strong>Baseline healthy run. All autopay fires, trust scores rise, hands rotate cleanly.</div>
+      </div>
+      <div class="how-to-item">
+        <div class="how-to-icon">🏃</div>
+        <div class="how-to-text"><strong>The Runner</strong>Marcus gets paid Week 1 then tries to ghost. Hit the red button to trigger. Watch the system block his exit.</div>
+      </div>
+      <div class="how-to-item">
+        <div class="how-to-icon">⚠️</div>
+        <div class="how-to-text"><strong>Partial Failure</strong>Jordan's autopay fails. 3-retry window fires. Payout adjusts automatically.</div>
+      </div>
+      <div class="how-to-item">
+        <div class="how-to-icon">⭐</div>
+        <div class="how-to-text"><strong>Trust Mode</strong>Score ≥80 + KYC + autopay = full hand instantly. No splits, no deferral.</div>
+      </div>
+      <div class="how-to-item">
+        <div class="how-to-icon">💥</div>
+        <div class="how-to-text"><strong>Cascade Failure</strong>Two defaults, different weeks. Circle pauses, both get locked out of new circles.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// SCENARIO DEFINITIONS
+// ============================================================
+const SCENARIOS = {
+  normal: {
+    title: "✅ The Perfect Circle",
+    desc: "4 members, everyone pays on time every week. This is the baseline — how a healthy circle runs start to finish. Watch the hand rotate and trust scores climb.",
+    highlight: "All members have autopay on and solid trust scores. Zero drama.",
+    members: [
+      { name:"Marcus", emoji:"👨🏿", trust:78, kyc:true,  autopay:true,  willDefault:false, slot:1 },
+      { name:"Priya",  emoji:"👩🏽", trust:82, kyc:true,  autopay:true,  willDefault:false, slot:2 },
+      { name:"Jordan", emoji:"🧑🏻", trust:69, kyc:true,  autopay:true,  willDefault:false, slot:3 },
+      { name:"Aaliya", emoji:"👩🏾", trust:91, kyc:true,  autopay:true,  willDefault:false, slot:4 },
+    ],
+    contribution: 125,
+    mode: 'standard',
+  },
+  runner: {
+    title: "🏃 The Runner — Beta Break Test",
+    desc: "Marcus gets his hand in Week 1, then tries to disappear — stops autopay and goes quiet. Classic susu scam. SYRKA's defense system activates automatically.",
+    highlight: "Marcus gets $300 upfront (standard mode). The system blocks his exit the moment exposure > 0.",
+    members: [
+      { name:"Marcus", emoji:"👨🏿", trust:55, kyc:true,  autopay:true,  willDefault:true,  defaultAfterWeek:1, slot:1 },
+      { name:"Priya",  emoji:"👩🏽", trust:80, kyc:true,  autopay:true,  willDefault:false, slot:2 },
+      { name:"Jordan", emoji:"🧑🏻", trust:72, kyc:true,  autopay:true,  willDefault:false, slot:3 },
+      { name:"Aaliya", emoji:"👩🏾", trust:88, kyc:true,  autopay:true,  willDefault:false, slot:4 },
+    ],
+    contribution: 125,
+    mode: 'standard',
+  },
+  partial: {
+    title: "⚠️ Partial Payment Failure",
+    desc: "Week 2 is Priya's hand — but Jordan's autopay fails. SYRKA retries 3× over 72h, adjusts Priya's deferred tranche, and still releases what was collected.",
+    highlight: "Priya still gets most of her hand. Jordan gets flagged and his trust score takes a hit.",
+    members: [
+      { name:"Marcus", emoji:"👨🏿", trust:78, kyc:true,  autopay:true,  willDefault:false, slot:1 },
+      { name:"Priya",  emoji:"👩🏽", trust:74, kyc:true,  autopay:true,  willDefault:false, slot:2 },
+      { name:"Jordan", emoji:"🧑🏻", trust:61, kyc:true,  autopay:false, willDefault:true,  defaultAfterWeek:2, slot:3, failsOnce:true },
+      { name:"Aaliya", emoji:"👩🏾", trust:90, kyc:true,  autopay:true,  willDefault:false, slot:4 },
+    ],
+    contribution: 125,
+    mode: 'standard',
+  },
+  trust: {
+    title: "⭐ Trust Mode Circle",
+    desc: "Every member has score ≥80, verified KYC, and autopay confirmed. In Trust Mode the full hand drops instantly — no splitting, no deferral, no waiting.",
+    highlight: "Full $500 released the same day every week. This is the premium tier.",
+    members: [
+      { name:"Marcus", emoji:"👨🏿", trust:87, kyc:true, autopay:true, willDefault:false, slot:1 },
+      { name:"Priya",  emoji:"👩🏽", trust:93, kyc:true, autopay:true, willDefault:false, slot:2 },
+      { name:"Jordan", emoji:"🧑🏻", trust:81, kyc:true, autopay:true, willDefault:false, slot:3 },
+      { name:"Aaliya", emoji:"👩🏾", trust:96, kyc:true, autopay:true, willDefault:false, slot:4 },
+    ],
+    contribution: 125,
+    mode: 'trust',
+  },
+  cascade: {
+    title: "💥 Cascade Failure",
+    desc: "Two members default in separate weeks. Jordan ghosts Week 2, Aaliya's bank hard-declines Week 3. Watch SYRKA contain the damage without touching member funds.",
+    highlight: "Circle pauses. Both defaulters blocked from new circles. Remaining members protected.",
+    members: [
+      { name:"Marcus", emoji:"👨🏿", trust:70, kyc:true,  autopay:true,  willDefault:false, slot:1 },
+      { name:"Priya",  emoji:"👩🏽", trust:66, kyc:true,  autopay:true,  willDefault:false, slot:2 },
+      { name:"Jordan", emoji:"🧑🏻", trust:48, kyc:true,  autopay:false, willDefault:true,  defaultAfterWeek:2, slot:3 },
+      { name:"Aaliya", emoji:"👩🏾", trust:52, kyc:false, autopay:true,  willDefault:true,  defaultAfterWeek:3, slot:4 },
+    ],
+    contribution: 125,
+    mode: 'standard',
+  },
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {};
+let logEntries = [];
+
+function loadScenario(key) {
+  logEntries = [];
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + key).classList.add('active');
+
+  const def = SCENARIOS[key];
+  state = {
+    key, def,
+    week: 0,
+    totalWeeks: def.members.length,
+    members: def.members.map((m, i) => ({
+      ...m, id: i,
+      contributed: 0, received: 0, exposure: 0,
+      status: 'active', trustScore: m.trust,
+      retries: 0, deferredOwed: 0,
+    })),
+    contribution: def.contribution,
+    mode: def.mode,
+    finished: false,
+    paused: false,
+  };
+
+  renderAll();
+  log('⚡', `Scenario loaded — <span class="hi">${def.title}</span>`, 'W0');
+  log('ℹ️', `${state.members.length} members · $${state.contribution}/week · Mode: <span class="hi">${def.mode.toUpperCase()}</span>`, 'W0');
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderAll() {
+  renderDesc();
+  renderMeta();
+  renderMembers();
+  renderTimeline();
+  renderControls();
+}
+
+function renderDesc() {
+  const d = state.def;
+  document.getElementById('scenario-desc').innerHTML = `
+    <h3>${d.title}</h3>
+    <p>${d.desc}<br><span class="highlight">→ ${d.highlight}</span></p>
+  `;
+}
+
+function renderMeta() {
+  const totalHand = state.contribution * state.members.length;
+  const active = state.members.filter(m => m.status === 'active').length;
+  const statusColor = state.paused ? 'var(--red)' : state.finished ? 'var(--gold)' : 'var(--green)';
+  const statusText  = state.paused ? '⏸ Paused' : state.finished ? '✅ Complete' : state.week > 0 ? '🔄 Active' : '▶ Ready';
+  document.getElementById('circle-meta').innerHTML = `
+    <div class="meta-item"><div class="meta-label">Hand Size</div><div class="meta-value gold">$${totalHand}</div></div>
+    <div class="meta-item"><div class="meta-label">Contribution</div><div class="meta-value">$${state.contribution}/wk</div></div>
+    <div class="meta-item"><div class="meta-label">Members</div><div class="meta-value">${active}/${state.members.length}</div></div>
+    <div class="meta-item"><div class="meta-label">Week</div><div class="meta-value">${state.week}/${state.totalWeeks}</div></div>
+    <div class="meta-item"><div class="meta-label">Mode</div><div class="meta-value ${state.mode==='trust'?'green':''}">${state.mode==='trust'?'⭐ Trust':'🔵 Standard'}</div></div>
+    <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value" style="color:${statusColor}">${statusText}</div></div>
+  `;
+}
+
+function renderMembers() {
+  const html = state.members.map(m => {
+    const isRecipient = state.week > 0 && m.slot === state.week;
+    let cardClass = 'member-card';
+    let badge = '';
+
+    if (m.status === 'defaulted') {
+      cardClass += ' danger';
+      badge = '<span class="member-badge badge-danger">⛔ Defaulted</span>';
+    } else if (isRecipient) {
+      cardClass += ' recipient';
+      badge = '<span class="member-badge badge-gold" style="background:var(--gold-dim);color:var(--gold)">💰 Receiving</span>';
+    } else if (m.trustScore >= 80 && m.status === 'active') {
+      cardClass += ' good';
+      badge = '<span class="member-badge badge-good">⭐ Trust</span>';
+    } else if (m.trustScore < 50) {
+      cardClass += ' warning';
+      badge = '<span class="member-badge badge-warn">⚠️ Watch</span>';
+    } else {
+      cardClass += ' good';
+    }
+
+    const trustColor = m.trustScore >= 80 ? 'var(--green)' : m.trustScore >= 50 ? 'var(--blue)' : 'var(--amber)';
+    const exposure = m.received - m.contributed;
+
+    return `
+      <div class="${cardClass}">
+        <div class="member-avatar">${m.emoji}</div>
+        <div class="member-name">${m.name}</div>
+        <div class="member-slot">Slot #${m.slot} · ${m.autopay?'🔄 Autopay':'⚠️ Manual'} · ${m.kyc?'✅ KYC':'❌ No KYC'}</div>
+        <div class="trust-bar-wrap">
+          <div class="trust-label"><span>Trust</span><span>${m.trustScore}/100</span></div>
+          <div class="trust-bar"><div class="trust-fill" style="width:${m.trustScore}%;background:${trustColor}"></div></div>
+        </div>
+        <div class="member-amounts">
+          <div class="amt"><div class="amt-label">Paid In</div><div class="amt-value" style="color:var(--green)">$${m.contributed}</div></div>
+          <div class="amt"><div class="amt-label">Received</div><div class="amt-value" style="color:var(--gold)">$${m.received}</div></div>
+          <div class="amt"><div class="amt-label">Exposure</div><div class="amt-value" style="color:${exposure>0?'var(--amber)':'var(--green)'}">${exposure>0?'+':''}$${exposure}</div></div>
+        </div>
+        ${badge}
+      </div>
+    `;
+  }).join('');
+  document.getElementById('members-grid').innerHTML = html;
+  renderPayoutCard();
+}
+
+function renderPayoutCard() {
+  const wrap = document.getElementById('payout-card-wrap');
+  if (state.week === 0) { wrap.innerHTML = ''; return; }
+  const recipient = state.members.find(m => m.slot === state.week);
+  if (!recipient) { wrap.innerHTML = ''; return; }
+
+  const totalHand = state.contribution * state.members.length;
+  const { upfront, deferred, mode } = calcPayout(recipient);
+
+  let cardClass, title, sub;
+  if (recipient.status === 'defaulted') {
+    cardClass = 'blocked';
+    title = `🔴 Payout Frozen — ${recipient.name}`;
+    sub = 'Member defaulted. Payout blocked until obligations are cleared.';
+  } else if (mode === 'trust_full') {
+    cardClass = 'full';
+    title = `🟢 Full Hand Released — ${recipient.name} (Trust Mode)`;
+    sub = 'Score ≥80 + KYC + autopay confirmed. Full amount transferred instantly.';
+  } else {
+    cardClass = 'partial';
+    title = `🟡 Split Payout Active — ${recipient.name}`;
+    sub = 'Standard mode: upfront portion now, remainder released over coming weeks.';
+  }
+
+  const weeksLeft = state.totalWeeks - state.week;
+  const deferredPerWeek = deferred > 0 && weeksLeft > 0 ? Math.floor(deferred / weeksLeft) : 0;
+
+  wrap.innerHTML = `
+    <div class="payout-card ${cardClass}">
+      <div class="payout-title">${title}</div>
+      <div class="payout-sub">${sub}</div>
+      <div class="payout-row"><span class="payout-key">Total Hand</span><span class="payout-val">$${totalHand}</span></div>
+      <div class="payout-row"><span class="payout-key">Released Upfront</span><span class="payout-val" style="color:var(--green)">$${recipient.status==='defaulted'?0:upfront}</span></div>
+      ${deferred > 0 && recipient.status !== 'defaulted' ? `
+      <div class="payout-row"><span class="payout-key">Deferred (over ${weeksLeft} wks)</span><span class="payout-val" style="color:var(--amber)">$${deferred} (~$${deferredPerWeek}/wk)</span></div>` : ''}
+      <div class="payout-row"><span class="payout-key">Contributed So Far</span><span class="payout-val">$${recipient.contributed}</span></div>
+      <div class="payout-row"><span class="payout-key">Net Exposure</span><span class="payout-val" style="color:${(recipient.received-recipient.contributed)>0?'var(--amber)':'var(--green)'}">$${recipient.received-recipient.contributed}</span></div>
+    </div>
+  `;
+}
+
+function renderTimeline() {
+  const html = Array.from({ length: state.totalWeeks }, (_, i) => i + 1).map(w => {
+    const m = state.members.find(x => x.slot === w);
+    const isActive = w === state.week;
+    const isDone   = w < state.week;
+    const pipColor = isDone
+      ? (m && m.status === 'defaulted' ? 'var(--red)' : 'var(--green)')
+      : isActive ? 'var(--gold)' : 'var(--border)';
+
+    return `
+      <div class="week-col ${isActive?'active-week':''} ${isDone&&!isActive?'done-week':''}">
+        <div class="week-label">WK ${w}</div>
+        <div class="week-emoji">${m ? m.emoji : '?'}</div>
+        <div class="week-pip" style="background:${pipColor}"></div>
+        <div class="week-name">${m ? m.name : ''}</div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('timeline').innerHTML = html;
+}
+
+function renderControls() {
+  const wrap = document.getElementById('controls');
+  const isRunnerActive = state.key === 'runner' && state.week >= 1 && !state.finished && !state.paused;
+  const advanceLabel = state.week === 0
+    ? '▶ Start Circle'
+    : state.week >= state.totalWeeks
+      ? '✅ Finished'
+      : `⏭ Advance to Week ${state.week + 1}`;
+
+  wrap.innerHTML = `
+    <button class="btn btn-primary" onclick="advanceWeek()"
+      ${state.week >= state.totalWeeks || state.finished || state.paused ? 'disabled' : ''}>
+      ${advanceLabel}
+    </button>
+    <button class="btn btn-ghost" onclick="loadScenario('${state.key}')">🔄 Reset</button>
+    ${isRunnerActive ? `<button class="btn btn-danger" onclick="triggerRunnerAttempt()">🏃 Marcus Tries to Ghost</button>` : ''}
+  `;
+}
+
+// ============================================================
+// PAYOUT CALC
+// ============================================================
+function calcPayout(member) {
+  const totalHand = state.contribution * state.members.length;
+  if (state.mode === 'trust' && member.trustScore >= 80 && member.kyc && member.autopay) {
+    return { upfront: totalHand, deferred: 0, mode: 'trust_full' };
+  }
+  const positionRisk = member.slot / state.members.length;
+  const remaining    = totalHand - member.contributed;
+  const advanceRate  = 0.5 + (positionRisk * 0.3);
+  const advance      = Math.floor(remaining * advanceRate);
+  const upfront      = member.contributed + advance;
+  const deferred     = totalHand - upfront;
+  return { upfront, deferred, mode: 'standard_partial' };
+}
+
+// ============================================================
+// ADVANCE WEEK
+// ============================================================
+function advanceWeek() {
+  if (state.week >= state.totalWeeks || state.paused) return;
+  state.week++;
+  const w = state.week;
+  const contrib = state.contribution;
+  const totalHand = contrib * state.members.length;
+  const recipient = state.members.find(m => m.slot === w);
+
+  log('━', `<span class="gold">━━━ WEEK ${w} BEGINS ━━━</span>`, `W${w}`);
+
+  let totalCollected = 0;
+
+  // Collect from all payers
+  state.members.forEach(m => {
+    if (m.slot === w) return;
+    if (m.status === 'defaulted') {
+      log('⛔', `<span class="danger">${m.name} is defaulted</span> — payment skipped`, `W${w}`);
+      return;
+    }
+
+    const shouldFail = m.willDefault &&
+      (m.defaultAfterWeek <= w) &&
+      m.status === 'active' &&
+      (!m.failsOnce || w === m.defaultAfterWeek);
+
+    if (shouldFail) {
+      log('❌', `<span class="danger">${m.name}'s autopay FAILED</span> — $${contrib} not collected`, `W${w}`);
+      m.retries = 0;
+      setTimeout(() => retryPayment(m, w, recipient), 500);
+    } else {
+      m.contributed += contrib;
+      m.trustScore = Math.min(100, m.trustScore + 5);
+      totalCollected += contrib;
+      log('✅', `<span class="good">${m.name} paid $${contrib}</span> — trust +5 → ${m.trustScore}`, `W${w}`);
+    }
+  });
+
+  // Process recipient payout
+  if (recipient && recipient.status !== 'defaulted') {
+    recipient.contributed += contrib;
+    totalCollected += contrib;
+    const { upfront, deferred, mode } = calcPayout(recipient);
+
+    if (mode === 'trust_full') {
+      log('⭐', `<span class="gold">${recipient.name} receives FULL $${totalHand}</span> — Trust Mode, instant transfer`, `W${w}`);
+      recipient.received += totalHand;
+    } else {
+      const actualUpfront = Math.min(upfront, totalCollected);
+      log('💰', `<span class="gold">${recipient.name} receives $${actualUpfront} upfront</span> (of $${totalHand} hand)`, `W${w}`);
+      if (deferred > 0) {
+        const wksLeft = state.totalWeeks - w;
+        log('⏳', `$${deferred} deferred for ${recipient.name} — ~$${Math.floor(deferred/Math.max(wksLeft,1))}/wk over ${wksLeft} weeks`, `W${w}`);
+        recipient.deferredOwed = deferred;
+      }
+      recipient.received += actualUpfront;
+    }
+    recipient.exposure = recipient.received - recipient.contributed;
+
+    // Runner post-receive log
+    if (state.key === 'runner' && recipient.name === 'Marcus' && w === 1) {
+      setTimeout(() => {
+        log('⚠️', `<span class="warn">Note: Marcus's exposure is now $${recipient.received - recipient.contributed} — exit will be blocked</span>`, `W${w}`);
+        renderAll();
+      }, 700);
+    }
+  }
+
+  // Release deferred tranches from prior slots
+  if (w > 1 && totalCollected > 0) {
+    state.members.forEach(m => {
+      if (m.slot < w && m.deferredOwed > 0 && m.status !== 'defaulted') {
+        const wksRemaining = state.totalWeeks - m.slot;
+        const release = Math.floor(m.deferredOwed / Math.max(wksRemaining, 1));
+        if (release > 0) {
+          m.received += release;
+          m.deferredOwed = Math.max(0, m.deferredOwed - release);
+          log('📤', `Deferred release: <span class="good">${m.name} +$${release}</span> from this week's collection`, `W${w}`);
+        }
+      }
+    });
+  }
+
+  // Cascade: Aaliya defaults week 3
+  if (state.key === 'cascade' && w === 3) {
+    const aaliya = state.members.find(m => m.name === 'Aaliya');
+    if (aaliya && aaliya.status === 'active') {
+      setTimeout(() => {
+        aaliya.status = 'defaulted';
+        aaliya.trustScore = Math.max(0, aaliya.trustScore - 20);
+        log('💥', `<span class="danger">Aaliya's bank hard-declined — 3 retries failed → DEFAULTED</span>`, `W${w}`);
+        log('🔒', `<span class="danger">Circle PAUSED · Manager notified · Aaliya blocked from future circles</span>`, `W${w}`);
+        state.paused = true;
+        renderAll();
+      }, 800);
+    }
+  }
+
+  if (w >= state.totalWeeks && !state.paused) {
+    state.finished = true;
+    log('🎉', `<span class="good">━━━ CIRCLE COMPLETE — all hands paid ━━━</span>`, `W${w}`);
+  }
+
+  renderAll();
+}
+
+// ============================================================
+// RETRY LOGIC
+// ============================================================
+function retryPayment(member, week, recipient) {
+  member.retries++;
+  const willRecover = member.failsOnce;
+
+  log('🔁', `Retry ${member.retries}/3 for <span class="warn">${member.name}</span> (Day ${member.retries})...`, `W${week}`);
+
+  if (willRecover && member.retries === 2) {
+    member.contributed += state.contribution;
+    member.trustScore = Math.max(0, member.trustScore - 5);
+    log('✅', `<span class="good">${member.name} recovered on retry 2</span> — trust −5 → ${member.trustScore}`, `W${week}`);
+    renderAll();
+    return;
+  }
+
+  if (member.retries < 3) {
+    setTimeout(() => retryPayment(member, week, recipient), 600);
+  } else {
+    member.status = 'defaulted';
+    member.trustScore = Math.max(0, member.trustScore - 20);
+    log('⛔', `<span class="danger">${member.name} — 3 retries exhausted → DEFAULTED</span>`, `W${week}`);
+    log('📩', `Manager notified · ${member.name} blocked from new circles · Trust −20 → ${member.trustScore}`, `W${week}`);
+    if (recipient && recipient.deferredOwed > 0) {
+      log('⏳', `<span class="warn">Deferred tranche for ${recipient.name} adjusted — ${member.name}'s share not collected</span>`, `W${week}`);
+    }
+    renderAll();
+  }
+}
+
+// ============================================================
+// RUNNER GHOST ATTEMPT
+// ============================================================
+function triggerRunnerAttempt() {
+  const marcus = state.members.find(m => m.name === 'Marcus');
+  if (!marcus) return;
+  const exposure = marcus.received - marcus.contributed;
+
+  log('🏃', `<span class="danger">Marcus attempts to disable autopay and exit the circle</span>`, `W${state.week}`);
+
+  if (exposure > 0) {
+    log('🔒', `EXIT BLOCKED — exposure: $${exposure} (received > contributed)`, `W${state.week}`);
+    log('⚠️', `<span class="warn">Marcus cannot leave while he owes the circle $${exposure}</span>`, `W${state.week}`);
+    log('📵', `Stripe autopay re-asserted · Account flagged · Trust −30`, `W${state.week}`);
+    marcus.trustScore = Math.max(0, marcus.trustScore - 30);
+    marcus.status = 'defaulted';
+    renderAll();
+  } else {
+    log('✅', `No exposure — clean exit permitted`, `W${state.week}`);
+  }
+}
+
+// ============================================================
+// LOG
+// ============================================================
+function log(icon, text, week) {
+  const t = new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  logEntries.unshift({ icon, text, t });
+  const el = document.getElementById('log-entries');
+  el.innerHTML = logEntries.map(e => `
+    <div class="log-entry">
+      <span class="log-time">${e.t}</span>
+      <span class="log-icon">${e.icon}</span>
+      <span class="log-text">${e.text}</span>
+    </div>
+  `).join('');
+}
+
+// Boot
+loadScenario('normal');
+</script>
+</body>
+</html>
